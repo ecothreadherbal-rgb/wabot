@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: whatsauto-saas
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm run dev
+    envVars:
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: whatsauto-data
+      mountPath: /opt/render/project/src/sessions
+      sizeGB: 1
+    healthCheckPath: /api/health

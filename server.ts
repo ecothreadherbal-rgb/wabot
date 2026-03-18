@@ -65,6 +65,11 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Health Check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", sessions: Array.from(sessions.keys()) });
+  });
+
   // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
     // Always bypass for single-user desktop mode
@@ -169,17 +174,20 @@ async function startServer() {
   });
 
   async function createWhatsAppSession(userId: string, socket: any) {
+    console.log(`[WhatsApp] Initializing session for user: ${userId}`);
     const sessionDir = path.join(process.cwd(), "sessions", userId);
     await fs.ensureDir(sessionDir);
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version } = await fetchLatestBaileysVersion();
 
+    console.log(`[WhatsApp] Using Baileys version: ${version.join(".")}`);
+
     const sock = makeWASocket({
       version,
       printQRInTerminal: false,
       auth: state,
-      logger: pino({ level: "silent" }),
+      logger: pino({ level: "debug" }), // Set to debug for more info
     });
 
     sessions.set(userId, sock);
@@ -190,12 +198,14 @@ async function startServer() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        console.log(`[WhatsApp] New QR code generated for ${userId}`);
         const qrDataURL = await QRCode.toDataURL(qr);
         socket.emit("qr", { userId, qr: qrDataURL });
       }
 
       if (connection === "close") {
         const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== DisconnectReason.loggedOut;
+        console.log(`[WhatsApp] Connection closed for ${userId}. Reconnecting: ${shouldReconnect}`);
         if (shouldReconnect) {
           createWhatsAppSession(userId, socket);
         } else {
@@ -203,6 +213,7 @@ async function startServer() {
           socket.emit("status", { userId, status: "disconnected" });
         }
       } else if (connection === "open") {
+        console.log(`[WhatsApp] Connection opened for ${userId}`);
         socket.emit("status", { userId, status: "connected" });
       }
     });
