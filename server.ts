@@ -67,16 +67,19 @@ async function startServer() {
 
   // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      req.user = decoded;
-      next();
-    } catch (err) {
-      res.status(401).json({ error: "Invalid token" });
-    }
+    // Always bypass for single-user desktop mode
+    req.user = { id: "admin", email: "admin@whatsauto.com", businessName: "WhatsAuto Admin" };
+    next();
   };
+
+  // Ensure default user exists
+  db.prepare("INSERT OR IGNORE INTO users (id, email, password, businessName, createdAt) VALUES (?, ?, ?, ?, ?)").run(
+    "admin", 
+    "admin@whatsauto.com", 
+    "admin", 
+    "WhatsAuto Admin", 
+    Date.now()
+  );
 
   // Auth Routes
   app.post("/api/auth/register", async (req, res) => {

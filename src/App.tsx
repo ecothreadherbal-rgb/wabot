@@ -62,135 +62,11 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
 );
 
 export default function App() {
-  const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>({ id: "admin", email: "admin@whatsauto.com", businessName: "WhatsAuto Admin" });
+  const [token, setToken] = useState<string | null>("default-token");
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-
-  // Auth States
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, [token]);
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, businessName }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setToken(data.token);
-        setUser(data.user);
-      } else {
-        setError(data.error);
-      }
-    } catch (err) {
-      setError("Connection failed");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
-    setUser(null);
-  };
-
-  if (loading) return <div className="h-screen bg-zinc-950 flex items-center justify-center text-white">Loading...</div>;
-
-  if (!user) {
-    return (
-      <div className="h-screen bg-zinc-950 flex flex-col items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-zinc-900 p-8 rounded-2xl border border-zinc-800 shadow-2xl"
-        >
-          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <MessageSquare className="text-white" size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-white text-center mb-2">WhatsAuto SaaS</h1>
-          <p className="text-zinc-400 text-center mb-8">
-            {authMode === "login" ? "Welcome back! Log in to your dashboard." : "Create your business account to get started."}
-          </p>
-
-          <form onSubmit={handleAuth} className="space-y-4">
-            {authMode === "register" && (
-              <div className="relative">
-                <Briefcase className="absolute left-4 top-3.5 text-zinc-500" size={18} />
-                <input
-                  type="text"
-                  placeholder="Business Name"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
-                  required
-                />
-              </div>
-            )}
-            <div className="relative">
-              <User className="absolute left-4 top-3.5 text-zinc-500" size={18} />
-              <input
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
-                required
-              />
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-4 top-3.5 text-zinc-500" size={18} />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
-                required
-              />
-            </div>
-
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-            <button
-              type="submit"
-              className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-xl hover:bg-emerald-700 transition-colors"
-            >
-              {authMode === "login" ? "Log In" : "Create Account"}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
-              className="text-emerald-500 hover:text-emerald-400 text-sm font-medium"
-            >
-              {authMode === "login" ? "Don't have an account? Register" : "Already have an account? Log In"}
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <ErrorBoundary>
@@ -220,7 +96,7 @@ export default function App() {
               </div>
 
               <div className="p-4 border-t border-zinc-800">
-                <div className="flex items-center space-x-3 mb-4 px-2">
+                <div className="flex items-center space-x-3 px-2">
                   <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold">
                     {user.businessName?.[0]}
                   </div>
@@ -229,13 +105,6 @@ export default function App() {
                     <p className="text-xs text-zinc-500 truncate">{user.email}</p>
                   </div>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-zinc-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span className="text-sm font-medium">Sign Out</span>
-                </button>
               </div>
             </motion.div>
           )}
